@@ -1,0 +1,50 @@
+# Video Denoiser Configuration
+
+# Server settings
+server:
+  host: "127.0.0.1"
+  port: 8000
+  auto_open_browser: true
+
+# Processing settings
+processing:
+  default_clip_size: 2
+  default_use_tiling: false
+  default_tile_width: 512
+  default_tile_height: 512
+  max_clip_size: 10
+  
+# Model settings
+models:
+  device: "cuda"  # 'cuda' or 'cpu'
+  model_name: "rvrt_denoising"
+  models_dir: "models"
+  
+# Video settings
+video:
+  supported_formats:
+    - "mp4"
+    - "mov"
+    - "avi"
+    - "mkv"
+    - "flv"
+    - "webm"
+  max_upload_size_mb: 5000  # 5GB limit
+  output_codec: "libx264"
+  output_audio_codec: "aac"
+  
+# Directories
+directories:
+  uploads: "uploads"
+  outputs: "outputs"
+  temp: "temp"
+  
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+# UI settings
+ui:
+  theme: "auto"  # 'light', 'dark', or 'auto'
+  default_language: "en"

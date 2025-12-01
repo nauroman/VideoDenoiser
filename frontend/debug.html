@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Denoiser - Debug Version</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .status {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #555;
+            padding: 40px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: #0066ff;
+            background: rgba(0, 102, 255, 0.1);
+        }
+        
+        .debug-log {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #333;
+        }
+        
+        .log-info { color: #0099ff; }
+        .log-success { color: #00ff00; }
+        .log-error { color: #ff0000; }
+        
+        button {
+            background: #0066ff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #0052cc;
+        }
+        
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        
+        .file-info {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #333;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0066ff, #00ff88);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 Video Denoiser - Debug Mode</h1>
+        
+        <div class="status">
+            <strong>Status:</strong> <span id="status">Ready</span>
+        </div>
+        
+        <div class="upload-area" id="uploadArea">
+            <h2>📁 Drag & Drop Video Here</h2>
+            <p>or click to browse</p>
+            <input type="file" id="fileInput" accept="video/*" style="display:none">
+        </div>
+        
+        <div id="fileInfo" style="display:none" class="file-info">
+            <h3>File Information</h3>
+            <div id="fileDetails"></div>
+            <div id="videoDetails"></div>
+        </div>
+        
+        <div class="file-info" style="margin-bottom:20px">
+            <h3>AI Models</h3>
+            <div id="modelsList"></div>
+        </div>
+        
+        <div id="controls" style="display:none">
+            <button id="processBtn">Start Processing</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+        
+        <div id="progressContainer" style="display:none">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width:0%">
+                    <span id="progressText">0%</span>
+                </div>
+            </div>
+            <div id="progressMessage"></div>
+        </div>
+        
+        <div class="debug-log" id="debugLog">
+            <div class="log-entry log-info">Debug log initialized...</div>
+        </div>
+    </div>
+
+    <script>
+        // Debug logging
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('debugLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type}]`, message);
+        }
+        
+        function setStatus(text) {
+            document.getElementById('status').textContent = text;
+            log(`Status: ${text}`);
+        }
+        
+        // State
+        let selectedFile = null;
+        let jobId = null;
+        let pollInterval = null;
+        
+        // Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileDetails = document.getElementById('fileDetails');
+        const videoDetails = document.getElementById('videoDetails');
+        const controls = document.getElementById('controls');
+        const processBtn = document.getElementById('processBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const progressMessage = document.getElementById('progressMessage');
+        
+        // Event listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#0066ff';
+            uploadArea.style.background = 'rgba(0, 102, 255, 0.1)';
+        });
+        
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#555';
+            uploadArea.style.background = 'transparent';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#555';
+            uploadArea.style.background = 'transparent';
+            handleFile(e.dataTransfer.files[0]);
+        });
+        
+        processBtn.addEventListener('click', startProcessing);
+        resetBtn.addEventListener('click', reset);
+        
+        // File handling
+        async function handleFile(file) {
+            if (!file) {
+                log('No file selected', 'error');
+                return;
+            }
+            
+            log(`File selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+            
+            if (!file.type.startsWith('video/')) {
+                log('Invalid file type. Please select a video file.', 'error');
+                alert('Please select a video file');
+                return;
+            }
+            
+            selectedFile = file;
+            
+            // Show file info
+            fileDetails.innerHTML = `
+                <p><strong>Name:</strong> ${file.name}</p>
+                <p><strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p><strong>Type:</strong> ${file.type}</p>
+            `;
+            fileInfo.style.display = 'block';
+            
+            // Upload
+            await uploadFile(file);
+        }
+        
+        async function uploadFile(file) {
+            try {
+                setStatus('Uploading...');
+                log('Starting upload...');
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log(`Upload response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Upload failed: ${errorText}`);
+                }
+                
+                const data = await response.json();
+                log('Upload successful!', 'success');
+                log(`Job ID: ${data.job_id}`);
+                log(`Video info: ${JSON.stringify(data.video_info, null, 2)}`);
+                
+                jobId = data.job_id;
+                
+                // Show video info
+                if (data.video_info) {
+                    videoDetails.innerHTML = `
+                        <h4>Video Information:</h4>
+                        <p><strong>Resolution:</strong> ${data.video_info.width}x${data.video_info.height}</p>
+                        <p><strong>FPS:</strong> ${data.video_info.fps}</p>
+                        <p><strong>Codec:</strong> ${data.video_info.codec}</p>
+                        <p><strong>Duration:</strong> ${data.video_info.duration}s</p>
+                        <p><strong>Has Audio:</strong> ${data.video_info.has_audio ? 'Yes' : 'No'}</p>
+                    `;
+                }
+                
+                setStatus('Ready to process');
+                controls.style.display = 'block';
+                uploadArea.style.display = 'none';
+                
+            } catch (error) {
+                log(`Upload error: ${error.message}`, 'error');
+                setStatus('Upload failed');
+                alert(`Upload failed: ${error.message}`);
+            }
+        }
+        
+        async function startProcessing() {
+            if (!jobId) {
+                log('No job ID', 'error');
+                return;
+            }
+            
+            try {
+                setStatus('Processing...');
+                log('Starting processing...');
+                
+                processBtn.disabled = true;
+                progressContainer.style.display = 'block';
+                
+                const response = await fetch(`/api/process/${jobId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clip_size: 2,
+                        use_tiling: false
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to start processing');
+                }
+                
+                log('Processing started', 'success');
+                startPolling();
+                
+            } catch (error) {
+                log(`Processing error: ${error.message}`, 'error');
+                setStatus('Processing failed');
+                processBtn.disabled = false;
+            }
+        }
+        
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            
+            pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/status/${jobId}`);
+                    if (!response.ok) throw new Error('Status check failed');
+                    
+                    const status = await response.json();
+                    log(`Progress: ${status.progress}% - ${status.message}`);
+                    
+                    updateProgress(status.progress, status.message);
+                    
+                    if (status.status === 'completed') {
+                        clearInterval(pollInterval);
+                        log('Processing completed!', 'success');
+                        setStatus('Completed');
+                        showDownloadButton();
+                    } else if (status.status === 'error') {
+                        clearInterval(pollInterval);
+                        log(`Error: ${status.error}`, 'error');
+                        setStatus('Error');
+                        processBtn.disabled = false;
+                    }
+                    
+                } catch (error) {
+                    log(`Polling error: ${error.message}`, 'error');
+                }
+            }, 1000);
+        }
+        
+        function updateProgress(percent, message) {
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = `${percent}%`;
+            progressMessage.textContent = message;
+        }
+        
+        function showDownloadButton() {
+            // Check if button already exists
+            if (document.getElementById('downloadBtn')) {
+                return;
+            }
+            
+            const downloadBtn = document.createElement('button');
+            downloadBtn.id = 'downloadBtn';
+            downloadBtn.textContent = 'Download Result';
+            downloadBtn.style.background = '#00cc66';
+            downloadBtn.addEventListener('click', () => {
+                window.location.href = `/api/download/${jobId}`;
+            });
+            controls.appendChild(downloadBtn);
+        }
+        
+        function reset() {
+            selectedFile = null;
+            jobId = null;
+            if (pollInterval) clearInterval(pollInterval);
+            
+            fileInfo.style.display = 'none';
+            controls.style.display = 'none';
+            progressContainer.style.display = 'none';
+            uploadArea.style.display = 'block';
+            processBtn.disabled = false;
+            
+            fileDetails.innerHTML = '';
+            videoDetails.innerHTML = '';
+            progressBar.style.width = '0%';
+            
+            setStatus('Ready');
+            log('Reset complete', 'info');
+        }
+        
+        // Load available models
+        function loadModels() {
+            fetch('/api/models')
+                .then(r => r.json())
+                .then(models => {
+                    const modelsList = document.getElementById('modelsList');
+                    modelsList.innerHTML = '';
+                    
+                    Object.entries(models).forEach(([name, info]) => {
+                        const div = document.createElement('div');
+                        div.style.padding = '10px';
+                        div.style.margin = '5px 0';
+                        div.style.background = '#333';
+                        div.style.borderRadius = '5px';
+                        
+                        const status = info.downloaded 
+                            ? `<span style="color:#0f0">✓ Downloaded (${info.size_mb.toFixed(1)} MB)</span>`
+                            : `<button onclick="downloadModel('${name}')" style="background:#0066ff;padding:5px 10px;border:none;color:white;border-radius:3px;cursor:pointer">Download</button>`;
+                        
+                        div.innerHTML = `
+                            <strong>${info.description}</strong><br>
+                            <small>${info.filename}</small><br>
+                            ${status}
+                        `;
+                        
+                        modelsList.appendChild(div);
+                    });
+                    
+                    log('Models loaded', 'success');
+                })
+                .catch(e => log(`Failed to load models: ${e.message}`, 'error'));
+        }
+        
+        function downloadModel(modelName) {
+            log(`Starting download of ${modelName}...`, 'info');
+            
+            fetch(`/api/models/download/${modelName}`, {
+                method: 'POST'
+            })
+                .then(r => r.json())
+                .then(data => {
+                    log(`Download response: ${JSON.stringify(data)}`, 'success');
+                    alert('Download started! Check console logs. Refresh page when complete.');
+                    setTimeout(loadModels, 3000);
+                })
+                .catch(e => {
+                    log(`Download failed: ${e.message}`, 'error');
+                    alert('Download failed: ' + e.message);
+                });
+        }
+        
+        // Check backend health
+        fetch('/api/health')
+            .then(r => r.json())
+            .then(data => {
+                log(`Backend health: ${JSON.stringify(data)}`, 'success');
+                log(`CUDA available: ${data.cuda_available}`, data.cuda_available ? 'success' : 'error');
+                if (data.cuda_device) {
+                    log(`GPU: ${data.cuda_device}`, 'success');
+                }
+            })
+            .catch(e => log(`Health check failed: ${e.message}`, 'error'));
+        
+        // Load models on startup
+        loadModels();
+    </script>
+</body>
+</html>
