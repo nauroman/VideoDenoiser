@@ -1,6 +1,6 @@
 """
 Video Processor
-Handles video denoising with RVRT and FFmpeg integration
+Handles video denoising with NAFNet AI model and FFmpeg integration
 """
 
 import os
@@ -15,23 +15,13 @@ from typing import Tuple, Optional, Callable
 from datetime import datetime
 import time
 
-try:
-    from realesrgan import RealESRGANer
-    from basicsr.archs.rrdbnet_arch import RRDBNet
-    REALESRGAN_AVAILABLE = True
-except ImportError:
-    REALESRGAN_AVAILABLE = False
-    RealESRGANer = None
-    RRDBNet = None
-
-from .rvrt_model import create_rvrt_model
 from .model_manager import ModelManager
 
 logger = logging.getLogger(__name__)
 
 
 class VideoProcessor:
-    """Processes videos with RVRT denoising while preserving all metadata"""
+    """Processes videos with NAFNet AI denoising while preserving all metadata"""
     
     def __init__(self, device: str = 'cuda'):
         """
@@ -140,19 +130,17 @@ class VideoProcessor:
         input_path: str,
         output_path: str,
         clip_size: int = 2,
-        tile_size: Optional[Tuple[int, int]] = None,
         num_passes: int = 2,
         use_temporal: bool = True,
         progress_callback: Optional[Callable] = None
     ) -> str:
         """
-        Process video with NAFNet denoising
+        Process video with NAFNet AI denoising
         
         Args:
             input_path: Input video path
             output_path: Output video path
             clip_size: Number of frames to process together
-            tile_size: Process video in tiles (width, height) for memory efficiency
             num_passes: Number of NAFNet passes (1-3)
             use_temporal: Enable temporal averaging for better quality
             progress_callback: Callback function for progress updates
@@ -189,13 +177,12 @@ class VideoProcessor:
                 self._extract_audio(input_path, str(temp_audio_path), video_info)
             
             # Process video frames
-            logger.info("Processing frames with RVRT...")
+            logger.info("Processing frames with NAFNet AI model...")
             self._process_frames(
                 input_path,
                 str(temp_video_path),
                 video_info,
                 clip_size,
-                tile_size,
                 progress_callback
             )
             
@@ -248,10 +235,9 @@ class VideoProcessor:
         output_path: str,
         video_info: dict,
         clip_size: int,
-        tile_size: Optional[Tuple[int, int]],
         progress_callback: Optional[Callable]
     ):
-        """Process video frames with RVRT"""
+        """Process video frames with NAFNet AI model"""
         cap = cv2.VideoCapture(input_path)
         
         width = video_info['width']
@@ -282,7 +268,7 @@ class VideoProcessor:
                 if len(frame_buffer) >= clip_size or not ret:
                     if len(frame_buffer) > 0:
                         # Process clip
-                        processed_clip = self._denoise_clip(frame_buffer, tile_size)
+                        processed_clip = self._denoise_clip(frame_buffer)
                         
                         # Write frames
                         for proc_frame in processed_clip:
@@ -307,15 +293,13 @@ class VideoProcessor:
     
     def _denoise_clip(
         self,
-        frames: list,
-        tile_size: Optional[Tuple[int, int]] = None
+        frames: list
     ) -> list:
         """
-        Denoise a clip of frames using RVRT
+        Denoise a clip of frames using NAFNet AI model
         
         Args:
             frames: List of frames (H, W, C) in BGR format (from OpenCV)
-            tile_size: Optional tile size for memory-efficient processing
             
         Returns:
             List of denoised frames in BGR format (for OpenCV)
@@ -403,41 +387,6 @@ class VideoProcessor:
             logger.exception(e)
             logger.warning("Returning original frames")
             return frames
-    
-    def _denoise_with_tiles(
-        self,
-        frames: torch.Tensor,
-        tile_size: Tuple[int, int]
-    ) -> torch.Tensor:
-        """Process video in tiles for memory efficiency"""
-        B, T, C, H, W = frames.shape
-        tile_h, tile_w = tile_size
-        
-        # Calculate number of tiles
-        n_tiles_h = (H + tile_h - 1) // tile_h
-        n_tiles_w = (W + tile_w - 1) // tile_w
-        
-        output = torch.zeros_like(frames)
-        
-        for i in range(n_tiles_h):
-            for j in range(n_tiles_w):
-                # Calculate tile boundaries
-                y1 = i * tile_h
-                y2 = min((i + 1) * tile_h, H)
-                x1 = j * tile_w
-                x2 = min((j + 1) * tile_w, W)
-                
-                # Extract tile
-                tile = frames[:, :, :, y1:y2, x1:x2]
-                
-                # Process tile
-                with torch.no_grad():
-                    denoised_tile = self.model(tile)
-                
-                # Place back
-                output[:, :, :, y1:y2, x1:x2] = denoised_tile
-        
-        return output
     
     def _merge_audio_video(
         self,

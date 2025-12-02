@@ -140,7 +140,7 @@ def create_directories():
 
 
 def download_models():
-    """Download RVRT pre-trained models"""
+    """Download NAFNet pre-trained models"""
     logger.info("Checking models...")
     
     try:
@@ -150,14 +150,18 @@ def download_models():
         model_manager = ModelManager()
         
         # This will download the model if not present
-        logger.info("Downloading RVRT model (this may take a few minutes)...")
-        model_path = model_manager.get_model_path('rvrt_denoising')
+        logger.info("Downloading NAFNet model (this may take a few minutes)...")
+        model_path = model_manager.get_model_path('baseline_sidd_width64')
         
-        logger.info(f"Model ready at: {model_path}")
-        return True
+        if model_path:
+            logger.info(f"Model ready at: {model_path}")
+            return True
+        else:
+            logger.info("Models will be downloaded via UI")
+            return False
     except Exception as e:
         logger.error(f"Failed to download models: {e}")
-        logger.info("Models will be downloaded on first run")
+        logger.info("Models will be downloaded on first run or via UI")
         return False
 
 

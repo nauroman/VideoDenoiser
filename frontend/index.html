@@ -110,9 +110,6 @@
             const [videoInfo, setVideoInfo] = useState(null);
             const [settings, setSettings] = useState({
                 clipSize: 2,
-                useTiling: false,
-                tileWidth: 512,
-                tileHeight: 512,
                 numPasses: 2,
                 useTemporal: true,
                 modelName: 'baseline_sidd_width64'  // Default model
@@ -388,7 +385,7 @@
                                             Video Denoiser
                                         </h1>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                                            AI-Powered RVRT Enhancement
+                                            AI-Powered NAFNet Denoising
                                         </p>
                                     </div>
                                 </div>
@@ -575,50 +572,6 @@
                             
                             {/* Settings Panel */}
                             <div className="space-y-6">
-                                {/* AI Models */}
-                                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-                                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
-                                        <span>🧠</span>
-                                        <span>AI Models</span>
-                                    </h2>
-                                    
-                                    <div className="space-y-3">
-                                        {Object.entries(availableModels).map(([name, info]) => (
-                                            <div key={name} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div className="flex-1">
-                                                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                            {info.description}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                            {info.filename}
-                                                        </p>
-                                                    </div>
-                                                    {info.downloaded ? (
-                                                        <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                                                            <span className="mr-1">✓</span>
-                                                            Downloaded
-                                                        </span>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => downloadModel(name)}
-                                                            disabled={downloadingModel === name}
-                                                            className="px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded transition-colors"
-                                                        >
-                                                            {downloadingModel === name ? 'Downloading...' : 'Download'}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                {info.downloaded && info.size_mb > 0 && (
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Size: {info.size_mb.toFixed(1)} MB
-                                                    </p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                
                                 {/* Settings */}
                                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center space-x-2">
@@ -741,59 +694,6 @@
                                             </p>
                                         </div>
                                         
-                                        {/* Tiling */}
-                                        <div>
-                                            <label className="flex items-center space-x-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={settings.useTiling}
-                                                    onChange={(e) => setSettings({...settings, useTiling: e.target.checked})}
-                                                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                                                    disabled={processing}
-                                                />
-                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                    Use Tiling (for 4K+)
-                                                </span>
-                                            </label>
-                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                Reduces VRAM usage for high-resolution videos
-                                            </p>
-                                        </div>
-                                        
-                                        {settings.useTiling && (
-                                            <div className="space-y-3 pl-6 border-l-2 border-blue-500">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                        Tile Width
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        min="256"
-                                                        max="2048"
-                                                        step="128"
-                                                        value={settings.tileWidth}
-                                                        onChange={(e) => setSettings({...settings, tileWidth: parseInt(e.target.value)})}
-                                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                        disabled={processing}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                        Tile Height
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        min="256"
-                                                        max="2048"
-                                                        step="128"
-                                                        value={settings.tileHeight}
-                                                        onChange={(e) => setSettings({...settings, tileHeight: parseInt(e.target.value)})}
-                                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                        disabled={processing}
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                                 
@@ -820,7 +720,7 @@
                     {/* Footer */}
                     <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-12">
                         <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-                            <p>Powered by RVRT • Running locally on your RTX 4090</p>
+                            <p>Powered by NAFNet (ECCV 2022) • Running locally on your GPU</p>
                         </div>
                     </footer>
                 </div>

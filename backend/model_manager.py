@@ -1,5 +1,5 @@
 """
-Model Manager for RVRT
+Model Manager for NAFNet
 Handles automatic downloading and management of pre-trained weights
 """
 
@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ModelManager:
-    """Manages RVRT model weights download and storage"""
+    """Manages NAFNet model weights download and storage"""
     
     # NAFNet models
     # Official repository: https://github.com/megvii-research/NAFNet

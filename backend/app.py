@@ -69,15 +69,12 @@ class JobStatus(BaseModel):
 class ProcessRequest(BaseModel):
     """Video processing request model"""
     clip_size: int = Field(default=2, alias='clipSize')
-    use_tiling: bool = Field(default=False, alias='useTiling')
-    tile_width: Optional[int] = Field(default=512, alias='tileWidth')
-    tile_height: Optional[int] = Field(default=512, alias='tileHeight')
     num_passes: int = Field(default=2, alias='numPasses')  # Number of NAFNet passes (1-3)
     use_temporal: bool = Field(default=True, alias='useTemporal')  # Max Quality mode
     model_name: Optional[str] = Field(default=None, alias='modelName')  # Selected model
     
     class Config:
-        allow_population_by_field_name = True  # Allow both camelCase and snake_case
+        populate_by_name = True  # Allow both camelCase and snake_case (Pydantic v2)
 
 
 @app.on_event("startup")
@@ -281,7 +278,6 @@ async def process_video(
         process_video_task,
         job_id,
         request.clip_size,
-        (request.tile_width, request.tile_height) if request.use_tiling else None,
         request.num_passes,
         request.use_temporal,
         request.model_name
@@ -293,7 +289,6 @@ async def process_video(
 async def process_video_task(
     job_id: str,
     clip_size: int,
-    tile_size: Optional[tuple],
     num_passes: int,
     use_temporal: bool,
     model_name: Optional[str]
@@ -331,7 +326,6 @@ async def process_video_task(
             input_path=input_path,
             output_path=str(output_path),
             clip_size=clip_size,
-            tile_size=tile_size,
             num_passes=num_passes,
             use_temporal=use_temporal,
             progress_callback=update_progress

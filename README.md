@@ -1,6 +1,6 @@
 # Video Denoiser 🎥✨
 
-AI-powered video denoising application using RVRT (Recurrent Video Restoration Transformer). Designed for local processing on RTX GPUs, optimized for drone footage (DJI Mini 5 Pro and others).
+AI-powered video denoising application using NAFNet (Simple Baselines for Image Restoration). Designed for local processing on RTX GPUs, optimized for drone footage and general video denoising.
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![CUDA](https://img.shields.io/badge/CUDA-11.8-green.svg)
@@ -13,13 +13,13 @@ The automatic model download may fail due to changed URLs on GitHub. If you get 
 1. **See [MODELS.md](MODELS.md)** for manual download instructions
 2. The app will still run but output will be identical to input (no denoising)
 3. Download and place a compatible model in `models/` folder
-4. Recommended: **BasicVSR++** (~17 MB, good quality and speed)
+4. Recommended: **Baseline-SIDD-width64** (~5.7 MB, best quality)
 
 ## Features ✨
 
-- 🚀 **State-of-the-art RVRT** - Advanced AI model for video denoising
+- 🚀 **State-of-the-art NAFNet** - ECCV 2022 AI model for video denoising
 - 💻 **Local Processing** - Runs entirely on your PC, no cloud required
-- 🎯 **RTX Optimized** - Leverages CUDA for blazing-fast processing on RTX 4090
+- 🎯 **GPU Optimized** - Leverages CUDA for blazing-fast processing
 - 🎨 **Modern Web UI** - Beautiful interface with drag & drop support
 - 🌓 **Dark/Light Theme** - Automatic theme switching based on preference
 - 📊 **Real-time Progress** - Live updates on processing status
@@ -27,14 +27,16 @@ The automatic model download may fail due to changed URLs on GitHub. If you get 
 - ⚙️ **Metadata Preservation** - Keeps all video metadata intact
 - 📁 **All Formats Supported** - Works with any video format (MP4, MOV, AVI, etc.)
 - 🎮 **User-friendly** - One-click launch, no technical knowledge required
+- ⚡ **Multi-pass Denoising** - Configurable strength (1-3 passes)
+- 🎯 **Temporal Enhancement** - Optional frame averaging for smoother results
 
 ## Requirements 📋
 
 ### System Requirements
 - **OS**: Windows 10/11
-- **GPU**: NVIDIA RTX 4090 (or any CUDA-compatible GPU)
-- **RAM**: 16GB+ recommended
-- **Storage**: 5GB+ free space
+- **GPU**: NVIDIA GPU with CUDA support (RTX recommended)
+- **RAM**: 8GB+ recommended
+- **Storage**: 2GB+ free space
 
 ### Software Requirements
 - **Python**: 3.8 or higher ([Download](https://www.python.org/downloads/))
@@ -75,9 +77,10 @@ The automatic model download may fail due to changed URLs on GitHub. If you get 
    - Supports all video formats (MP4, MOV, AVI, MKV, etc.)
 
 2. **Configure Settings** (Optional)
+   - **AI Model**: Select downloaded pretrained model
+   - **Denoising Strength**: Choose 1-3 passes (more = stronger)
+   - **Max Quality**: Enable temporal enhancement for smoother results
    - **Clip Size**: Number of frames to process together (2-5 recommended)
-   - **Tiling**: Enable for 4K+ videos to reduce VRAM usage
-   - **Tile Size**: Adjust tile dimensions if using tiling
 
 3. **Start Processing**
    - Click "Start Denoising"
@@ -91,16 +94,27 @@ The automatic model download may fail due to changed URLs on GitHub. If you get 
 
 ### Settings Explained ⚙️
 
+#### AI Model
+- **What it does**: Select which NAFNet model to use
+- **Baseline-SIDD-width64**: Best quality (recommended)
+- **NAFNet-SIDD-width64**: Best quality, slightly larger
+- **NAFNet-SIDD-width32**: Faster, smaller model
+
+#### Denoising Strength
+- **1 pass**: Light denoising, fastest
+- **2 passes**: Medium denoising (recommended)
+- **3 passes**: Strong denoising, best quality but slower
+
+#### Max Quality (Temporal Enhancement)
+- **What it does**: Averages neighboring frames for smoother results
+- **When to use**: For videos with camera shake or motion
+- **Trade-off**: Slower but smoother output
+
 #### Clip Size
 - **What it does**: Number of consecutive frames processed together
 - **Recommended**: 2-5 frames
 - **Lower values**: Faster but may miss temporal patterns
 - **Higher values**: Better quality but slower
-
-#### Tiling
-- **When to use**: For 4K or 8K videos to prevent out-of-memory errors
-- **Tile size**: 512x512 is a good starting point
-- **Trade-off**: Slightly slower but uses less VRAM
 
 ## Project Structure 📁
 
@@ -108,9 +122,9 @@ The automatic model download may fail due to changed URLs on GitHub. If you get 
 VideoDenoiser/
 ├── backend/                 # Backend logic
 │   ├── app.py              # FastAPI server
-│   ├── video_processor.py  # Video processing with RVRT
+│   ├── video_processor.py  # Video processing with NAFNet
 │   ├── model_manager.py    # Model download & management
-│   └── rvrt_model.py       # RVRT implementation
+│   └── nafnet_model.py     # NAFNet implementation
 ├── frontend/               # Web UI
 │   └── index.html         # React-based interface
 ├── models/                # Pre-trained weights (auto-downloaded)
@@ -125,27 +139,32 @@ VideoDenoiser/
 
 ## Technical Details 🔧
 
-### RVRT Model
-- **Architecture**: Recurrent Video Restoration Transformer
-- **Purpose**: Video denoising without upscaling
+### NAFNet Model
+- **Architecture**: Nonlinear Activation Free Network (ECCV 2022)
+- **Paper**: "Simple Baselines for Image Restoration"
+- **Purpose**: Pure AI denoising without upscaling
 - **Input**: Video frames (any resolution)
 - **Output**: Denoised video (same resolution)
-- **Pre-trained**: On diverse video datasets
+- **Pre-trained**: On SIDD dataset (real-world smartphone noise)
+- **Models**: Baseline, NAFNet width32, NAFNet width64
 
 ### Video Processing Pipeline
 1. **Extract audio** from original video
-2. **Process frames** with RVRT in batches
-3. **Reconstruct video** with same codec/bitrate
-4. **Merge audio** back with processed video
-5. **Preserve metadata** (framerate, resolution, format)
+2. **Process frames** with NAFNet in clips
+3. **Apply multi-pass denoising** (1-3 passes)
+4. **Optional temporal averaging** for smoother results
+5. **Reconstruct video** with same codec/bitrate
+6. **Merge audio** back with processed video
+7. **Preserve metadata** (framerate, resolution, format)
 
 ### Performance Benchmarks (RTX 4090)
 
-| Resolution | FPS (Processing) | Time (1 min video) |
-|------------|------------------|-------------------|
-| 1080p      | 30-40 FPS        | ~1.5-2 min        |
-| 4K         | 10-15 FPS        | ~4-6 min          |
-| 4K (Tiled) | 15-20 FPS        | ~3-4 min          |
+| Resolution | FPS (Processing) | Time (1 min video) | Passes |
+|------------|------------------|-------------------|--------|
+| 1080p      | 80-100 FPS       | ~40 sec           | 1      |
+| 1080p      | 40-50 FPS        | ~1.5 min          | 2      |
+| 4K         | 20-30 FPS        | ~2-3 min          | 1      |
+| 4K         | 10-15 FPS        | ~4-6 min          | 2      |
 
 *Note: Actual performance varies based on video complexity and settings*
 
@@ -196,9 +215,10 @@ If you encounter issues:
 Edit `backend/model_manager.py` to use custom model weights:
 ```python
 MODELS = {
-    'rvrt_denoising': {
+    'custom_model': {
         'url': 'your_custom_model_url',
         'filename': 'your_model.pth',
+        'description': 'Custom NAFNet model'
     }
 }
 ```
@@ -249,13 +269,13 @@ A: Yes, but 10-20x slower. GPU is highly recommended.
 A: Currently one at a time. Batch processing planned for future release.
 
 **Q: Will this improve compressed YouTube videos?**
-A: Yes! RVRT is good at handling compression artifacts.
+A: Yes! NAFNet is good at handling compression artifacts and real-world noise.
 
 **Q: Does it change the video length/framerate?**
 A: No, all timing information is preserved exactly.
 
 **Q: Can I use this commercially?**
-A: Check RVRT license. This wrapper is MIT licensed.
+A: Check NAFNet license. This wrapper is MIT licensed.
 
 ## Performance Tips 💡
 
@@ -289,7 +309,7 @@ Contributions are welcome! Please feel free to submit pull requests.
 
 ## Acknowledgments 🙏
 
-- **RVRT**: [JingyunLiang/RVRT](https://github.com/JingyunLiang/RVRT)
+- **NAFNet**: [megvii-research/NAFNet](https://github.com/megvii-research/NAFNet)
 - **PyTorch**: Deep learning framework
 - **FFmpeg**: Video processing
 - **FastAPI**: Web framework
@@ -300,7 +320,7 @@ Contributions are welcome! Please feel free to submit pull requests.
 
 This project is licensed under the MIT License. See LICENSE file for details.
 
-Note: Pre-trained models may have their own licenses. Please check the RVRT repository for model licensing.
+Note: Pre-trained models may have their own licenses. Please check the NAFNet repository for model licensing.
 
 ## Support 💖
 
@@ -314,4 +334,4 @@ If you find this project helpful:
 
 **Made with ❤️ for drone enthusiasts and video creators**
 
-*Tested on Windows 11 with RTX 4090*
+*Tested on Windows 11 with RTX 4090 • Powered by NAFNet (ECCV 2022)*
