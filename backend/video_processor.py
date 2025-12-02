@@ -53,7 +53,7 @@ class VideoProcessor:
                 logger.info(f"Using user-selected model: {available_model}")
             else:
                 # Prefer Baseline SIDD width64 (best quality)
-                for model_name in ['baseline_sidd_width64', 'nafnet_sidd_width64', 'nafnet_sidd_width32']:
+                for model_name in ['baseline_sidd_width64', 'baseline_sidd_width32', 'nafnet_sidd_width64', 'nafnet_sidd_width32']:
                     if model_name in models and models[model_name]['downloaded']:
                         available_model = model_name
                         logger.info(f"Found downloaded NAFNet model: {model_name}")

@@ -13,7 +13,7 @@ The automatic model download may fail due to changed URLs on GitHub. If you get 
 1. **See [MODELS.md](MODELS.md)** for manual download instructions
 2. The app will still run but output will be identical to input (no denoising)
 3. Download and place a compatible model in `models/` folder
-4. Recommended: **Baseline-SIDD-width64** (~5.7 MB, best quality)
+4. Recommended: **Baseline-SIDD-width64** (~5.7 MB, best quality) or **Baseline-SIDD-width32** (~1.5 MB, fast)
 
 ## Features ✨
 
@@ -96,9 +96,10 @@ The automatic model download may fail due to changed URLs on GitHub. If you get 
 
 #### AI Model
 - **What it does**: Select which NAFNet model to use
-- **Baseline-SIDD-width64**: Best quality (recommended)
-- **NAFNet-SIDD-width64**: Best quality, slightly larger
-- **NAFNet-SIDD-width32**: Faster, smaller model
+- **Baseline-SIDD-width64**: Best quality (~5.7 MB) ⭐ Recommended
+- **Baseline-SIDD-width32**: Fast (~1.5 MB)
+- **NAFNet-SIDD-width64**: Best quality (~8.9 MB, larger model)
+- **NAFNet-SIDD-width32**: Faster (~2.4 MB)
 
 #### Denoising Strength
 - **1 pass**: Light denoising, fastest

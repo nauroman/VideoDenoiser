@@ -23,6 +23,12 @@ class ModelManager:
             'filename': 'Baseline-SIDD-width64.pth',
             'description': 'Baseline SIDD width64 ⭐ Recommended'
         },
+        'baseline_sidd_width32': {
+            # Baseline model trained on SIDD dataset (smaller, faster)
+            'url': 'https://github.com/megvii-research/NAFNet/releases/download/v1.0/Baseline-SIDD-width32.pth',
+            'filename': 'Baseline-SIDD-width32.pth',
+            'description': 'Baseline SIDD width32 (Fast)'
+        },
         'nafnet_sidd_width64': {
             # NAFNet trained on SIDD dataset (larger model)
             'url': 'https://github.com/megvii-research/NAFNet/releases/download/v1.0/NAFNet-SIDD-width64.pth',

@@ -13,9 +13,10 @@ The automatic model download may fail due to:
 
 **Best for**: Pure image/video denoising, low light noise, real-world noise
 
-1. Download model from:
+1. Download models from:
    ```
    https://github.com/megvii-research/NAFNet/releases/download/v1.0/Baseline-SIDD-width64.pth
+   https://github.com/megvii-research/NAFNet/releases/download/v1.0/Baseline-SIDD-width32.pth
    ```
    Or NAFNet models:
    ```
@@ -26,16 +27,20 @@ The automatic model download may fail due to:
 2. Place in `models/` folder as:
    ```
    models/Baseline-SIDD-width64.pth
+   models/Baseline-SIDD-width32.pth
    ```
 
 3. Restart application or use Download button in UI
 
 **Model Info:**
-- Size: ~5.7 MB (width64) / ~1.5 MB (width32)
-- Speed: Very fast on RTX 4090 (100+ FPS)
+- **Baseline-SIDD-width64**: ~5.7 MB, Best quality ⭐
+- **Baseline-SIDD-width32**: ~1.5 MB, Fast
+- **NAFNet-SIDD-width64**: ~8.9 MB, Best quality (larger model)
+- **NAFNet-SIDD-width32**: ~2.4 MB, Faster
+- Speed: Very fast on RTX 4090 (80-100+ FPS)
 - Quality: State-of-the-art for pure denoising
 - Handles: Low light noise, Gaussian noise, real-world noise
-- **Status**: ✅ Official NAFNet Baseline model (ECCV 2022)
+- **Status**: ✅ Official NAFNet models (ECCV 2022)
 - **Repository**: https://github.com/megvii-research/NAFNet
 - **Paper**: "Simple Baselines for Image Restoration"
 - **Trained on**: SIDD dataset (smartphone images)
